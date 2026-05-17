@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+}
+
+model Employee {
+  id            String           @id @default(cuid())
+  name          String
+  nik           String           @unique
+  department    String
+  position      String?
+  phone         String?
+  username      String?          @unique
+  password      String?
+  role          String           @default("employee")
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  phones         PhoneRegistration[]
+  checkLogs      CheckLog[]
+  dailyBarcodes  DailyBarcode[]
+  deviceSessions DeviceSession[]
+}
+
+model PhoneRegistration {
+  id         String            @id @default(cuid())
+  employeeId String
+  employee   Employee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  brand      String
+  model      String
+  phoneType  String            @default("Smartphone")
+  imei       String            @unique
+  color      String?
+  phonePhoto String?
+  qrCode     String            @unique
+  status     String            @default("active")
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  checkLogs     CheckLog[]
+  dailyBarcodes DailyBarcode[]
+}
+
+model CheckLog {
+  id         String            @id @default(cuid())
+  phoneId    String
+  phone      PhoneRegistration @relation(fields: [phoneId], references: [id])
+  employeeId String
+  employee   Employee          @relation(fields: [employeeId], references: [id])
+  type       String
+  checkedAt  DateTime          @default(now())
+  notes      String?
+
+  @@index([phoneId])
+  @@index([employeeId])
+  @@index([checkedAt])
+}
+
+model DailyBarcode {
+  id         String            @id @default(cuid())
+  employeeId String
+  employee   Employee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  phoneId    String
+  phone      PhoneRegistration @relation(fields: [phoneId], references: [id])
+  qrCode     String            @unique
+  date       String
+  createdAt  DateTime          @default(now())
+
+  @@unique([employeeId, date])
+  @@index([employeeId])
+}
+
+model DeviceSession {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  deviceId   String
+  deviceName String
+  userAgent  String
+  lastLogin  DateTime @default(now())
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  @@index([employeeId])
+}

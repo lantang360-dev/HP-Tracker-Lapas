@@ -1,0 +1,7 @@
+export { DashboardTab } from './DashboardTab'
+export { PhoneListTab } from './PhoneListTab'
+export { ScannerTab } from './ScannerTab'
+export { InsideTab } from './InsideTab'
+export { HistoryTab } from './HistoryTab'
+export { EmployeesTab } from './EmployeesTab'
+export { KepalaTab } from './KepalaTab'
