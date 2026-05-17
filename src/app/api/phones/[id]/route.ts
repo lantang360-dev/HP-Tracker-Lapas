@@ -6,14 +6,18 @@ import { Prisma } from "@prisma/client";
 function mapPhoneNik(phone: any) {
   return {
     ...phone,
-    employee: phone.employee ? {
-      id: phone.employee.id,
-      name: phone.employee.name,
-      nip: phone.employee.nik,
-      department: phone.employee.department,
-      position: phone.employee.position,
-      ...(phone.employee.phone !== undefined && { phone: phone.employee.phone }),
-    } : undefined,
+    employee: phone.employee
+      ? {
+          id: phone.employee.id,
+          name: phone.employee.name,
+          nip: phone.employee.nik,
+          department: phone.employee.department,
+          position: phone.employee.position,
+          ...(phone.employee.phone !== undefined && {
+            phone: phone.employee.phone,
+          }),
+        }
+      : undefined,
   };
 }
 
@@ -48,7 +52,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     if (!phone) {
       return NextResponse.json(
         { success: false, error: "Phone registration not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -57,7 +61,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     console.error("Error fetching phone:", error);
     return NextResponse.json(
       { success: false, error: "Failed to fetch phone registration" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -76,7 +80,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     if (!existing) {
       return NextResponse.json(
         { success: false, error: "Phone registration not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -87,8 +91,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       });
       if (duplicateImei) {
         return NextResponse.json(
-          { success: false, error: "A phone with this IMEI is already registered" },
-          { status: 409 }
+          {
+            success: false,
+            error: "A phone with this IMEI is already registered",
+          },
+          { status: 409 },
         );
       }
     }
@@ -123,14 +130,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       if (error.code === "P2002") {
         return NextResponse.json(
           { success: false, error: "Duplicate field value" },
-          { status: 409 }
+          { status: 409 },
         );
       }
     }
     console.error("Error updating phone:", error);
     return NextResponse.json(
       { success: false, error: "Failed to update phone registration" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -153,7 +160,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     if (!phone) {
       return NextResponse.json(
         { success: false, error: "Phone registration not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -164,25 +171,30 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
         {
           success: false,
           error:
-            "Cannot delete phone that is currently checked in. Please check it out first.",
+            "HP sedang berada di dalam. Silakan check-out terlebih dahulu.",
         },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
+    // Delete related records first (foreign key dependencies)
+    await db.checkLog.deleteMany({ where: { phoneId: id } });
+    await db.dailyBarcode.deleteMany({ where: { phoneId: id } });
+
+    // Then delete the phone
     await db.phoneRegistration.delete({
       where: { id },
     });
 
     return NextResponse.json({
       success: true,
-      message: "Phone registration deleted successfully",
+      message: "HP berhasil dihapus dari sistem",
     });
   } catch (error) {
     console.error("Error deleting phone:", error);
     return NextResponse.json(
       { success: false, error: "Failed to delete phone registration" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
